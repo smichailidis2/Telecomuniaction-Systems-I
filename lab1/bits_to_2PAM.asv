@@ -1,0 +1,23 @@
+function X = bits_to_2PAM(b)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% X = bits_to_2PAM(b)                                                           %
+%                                                                               %
+% OUTPUT                                                                        %    
+%       X : sequence of mapped symbols using 2-PAM mapping as shown below:      %
+%                                                                               %
+%           0 ---> + 1                                                          %
+%           1 ---> - 1                                                          %
+%                                                                               %
+% INPUT                                                                         %      
+%       b : input sequence of bits quantized at 0,1                             %
+%                                                                               %
+%    S. K. Michailidis, March 2023                                              %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+for i = 1:length(b)
+    X(i) =  * (b==)
+
+
+
+end
