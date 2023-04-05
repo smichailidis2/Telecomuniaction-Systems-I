@@ -126,36 +126,72 @@ clc
 
 % ( B-1 )
 
+% questions 1. & 2.
+
 T = 10^(-3);
 over = 10;
 A = 4;
 Ts = T/over;
 Fs = 1/Ts;
 
-
-figure(1)
-a = 0.5
-k = 1
 for a = 0:0.5:1
     for k = 0:2
-        figure((k+1))
         [phi,t] = srrc_pulse(T,over,A,a);
-        %shifted_phi = delayseq(phi.', -k*T, Fs);
-        shifted_phi = zeros(over:1);phi(1:end-over)
-        shifted_t = [-A*T-k*T:Ts:A*T-k*T] + 10^(-8);
-        %plot(t,phi,t,shifted_phi)
-        %plot(t,phi)
-        figure (2)
-        %plot(t,shifted_phi)
+        shifted_phi = [zeros(1,k*over) phi(1:end-k*over)];
+        figure()
+        plot(t,phi)
+        hold on;
+        plot(t,shifted_phi)
+        hold on;
+        hold off;
         grid on;
+        title('SRRC pulses')
+        
+        % Hadamard product of the two functions
+        prod = phi .* shifted_phi;
+        figure()
+        plot(t, prod)
+        title('Hadamard product of the srrc pulses')
+        grid on;
+
+    end
+end
+
+
+
+% question 3.
+
+clear;
+close all;
+clc
+
+T = 10^(-3);
+over = 10;
+A = 4;
+Ts = T/over;
+
+for a = 0:0.5:1
+    for k = 0:3
+        [phi,t] = srrc_pulse(T,over,A,a);
+        shifted_phi = [zeros(1,k*over) phi(1:end-k*over)];
+        
+        % Hadamard product of the two functions
+        prod = phi .* shifted_phi;
+        
+        % simulating the integral
+        integ = sum( prod )*Ts
+        
+        % plotting the integral values
+        integ_plot = integ.*(t.^0);
+        txt = ['Rff = ',num2str(integ)];
+        plot(t,integ_plot,'DisplayName',txt)
         hold on;
     end
 end
-%axis([-4*T 4*T -10 50])
+grid on;
+axis([-4*T 4*T -0.2 1.2])
+legend show
 hold off;
-
-
-% ( B-2 )
 
 
 
@@ -182,12 +218,44 @@ stem(b)
 % ( C-2 )
 
 %  a) 2-PAM :
-X = bits_to_2PAM(b);
+X_k = bits_to_2PAM(b);
 figure
-stem(X);
+stem(X_k);
 
 % b) Simulation of the sum:
 
-X_delta = 1/Ts * upsample(X, over);
-time
+X_delta = 1/Ts * upsample(X_k, over);
+time = 0:Ts:N*T-Ts;
+figure
+stem(time,X_delta);
+grid on;
 
+% c) Simulation of the first convolution:
+
+[phi,t] = srrc_pulse(T,over,A,a);
+
+% compute the convolution time
+t_conv = min(time) + min(t) : Ts : max(time) + max(t) ;
+
+X = conv(X_delta,phi)*Ts;
+figure
+plot(t_conv,X)
+grid on;
+
+% d) Simulation of the second convolution:
+
+% First flip the srrc pulse and the time vectors:
+phi_flipped = fliplr(phi);
+t_new = fliplr(t);
+
+% Compute the new convolution time
+t_conv_new = min(t_conv) + min(t_new) : Ts : max(t_conv) + max(t_new) ;
+
+Z = conv(X,phi_flipped)*Ts;
+
+figure
+plot(t_conv_new,Z)
+grid on;
+hold on;
+stem([0:N-1]*T,X_k);
+grid on;
