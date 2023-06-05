@@ -95,22 +95,21 @@ title('Output Periodogram')
 
 
 %% 4)
-
 F0 = 200;
-cosinus_carrier =  2*cos(2*pi*F0*t_conv);
-sinus_carrier   = -2*sin(2*pi*F0*t_conv);
+cosinus_carrier =  2*cos(2*pi*F0*t_conv)';
+sinus_carrier   = -2*sin(2*pi*F0*t_conv)';
 
-X_I_t = X_in*cosinus_carrier;
-X_Q_t = X_Qn*sinus_carrier;
+X_I_t = X_in.*cosinus_carrier;
+X_Q_t = X_Qn.*sinus_carrier;
 
 % plots
-figure('Name','Question -4-','NumberTitle','off');
+figure('Name','Question -4.1-','NumberTitle','off');
 plot(t_conv,X_I_t,'r')
 grid on
 xlabel('time')
 ylabel('Amplitude of X_I')
 title('Output Waveform')
-figure('Name','Question -4-','NumberTitle','off');
+figure('Name','Question -4.1-','NumberTitle','off');
 plot(t_conv,X_Q_t,'k')
 grid on
 xlabel('time')
@@ -125,15 +124,175 @@ P_X_I = ( abs(X_I_F).^2 ) / T_total;
 P_X_Q = ( abs(X_Q_F).^2 ) / T_total;
 
 % plot the periodograms
-figure('Name','Question -4-','NumberTitle','off');
+figure('Name','Question -4.2-','NumberTitle','off');
 plot(F_axis,P_X_I,'r')
 grid on
 xlabel('frequency')
 ylabel('Periodogram of X_I')
 title('Output Periodogram')
-figure('Name','Question -4-','NumberTitle','off');
+figure('Name','Question -4.2-','NumberTitle','off');
 plot(F_axis,P_X_Q,'k')
 grid on
 xlabel('frequency')
 ylabel('Periodogram of X_Q')
 title('Output Periodogram')
+
+
+%% 5)
+
+% transmitter output - time domain
+X_t = X_I_t + X_Q_t;
+
+figure('Name','Question -5-','NumberTitle','off');
+plot(t_conv,X_t);
+grid on;
+xlabel('time')
+ylabel('Amplitude of X')
+title('Transmitter Output Waveform')
+
+% transmitter output - frequency domain
+X_F = X_I_F + X_Q_F;    % fft is a linear operator
+
+P_X = abs(X_F).^2/T_total;
+
+figure('Name','Question -5-','NumberTitle','off');
+plot(F_axis,P_X)
+grid on
+xlabel('frequency')
+ylabel('Periodogram of X')
+title('Transmitter Output Periodogram')
+
+
+%% 6)
+% The channel is ideal
+
+%% 7)
+
+% adding wgn
+SNR_db = 20;
+
+var_W = 1/ ( Ts * 10^(SNR_db/10) );
+var_N = Ts*var_W/2;
+
+W_t = sqrt(var_N)*randn(1,length(t_conv))';
+
+% channel output signal
+Y_t = X_t + W_t;
+
+%% 8)
+
+% multiply the channel output
+
+Y_i_t = Y_t.*cosinus_carrier;
+
+Y_Q_t = Y_t.*sinus_carrier;
+
+% time domain plots
+figure('Name','Question -8.1-','NumberTitle','off');
+plot(t_conv,X_in,'r')
+grid on
+xlabel('time')
+ylabel('Amplitude of Y_i')
+title('Output Waveform')
+figure('Name','Question -8.1-','NumberTitle','off');
+plot(t_conv,X_Qn,'k')
+grid on
+xlabel('time')
+ylabel('Amplitude of Y_Q')
+title('Output Waveform')
+
+
+% frequency domain
+
+Y_i_F = fftshift(fft(Y_i_t,Nf)*Ts);
+
+Y_Q_F = fftshift(fft(Y_Q_t,Nf)*Ts);
+
+
+P_Y_i = ( abs(Y_i_F).^2 ) / T_total;
+P_Y_Q = ( abs(Y_Q_F).^2 ) / T_total;
+
+% plot the periodograms
+figure('Name','Question -8.2-','NumberTitle','off');
+plot(F_axis,P_Y_i,'r')
+grid on
+xlabel('frequency')
+ylabel('Periodogram of Y_i')
+title('Output Periodogram')
+figure('Name','Question -8.2-','NumberTitle','off');
+plot(F_axis,P_Y_Q,'k')
+grid on
+xlabel('frequency')
+ylabel('Periodogram of Y_Q')
+title('Output Periodogram')
+
+
+%% 9)
+
+Y_i_filtered_t = conv(Y_i_t,phi_t)*Ts;
+
+Y_Q_filtered_t = conv(Y_Q_t,phi_t)*Ts;
+
+% calculate new time vector and new T_total
+t_conv_new = min(t_conv) + min(t) : Ts : max(t_conv) + max(t);
+T_total_new = max(t_conv_new) - min(t_conv_new);
+
+
+% time domain plots
+figure('Name','Question -9.1-','NumberTitle','off');
+plot(t_conv_new,Y_i_filtered_t,'r')
+grid on
+xlabel('time')
+ylabel('Amplitude of Y_i_ _f_i_l_t_e_r_e_d')
+title('Output Waveform')
+figure('Name','Question -9.1-','NumberTitle','off');
+plot(t_conv_new,Y_Q_filtered_t,'k')
+grid on
+xlabel('time')
+ylabel('Amplitude of Y_Q_ _f_i_l_t_e_r_e_d')
+title('Output Waveform')
+
+
+% frequency domain
+
+Y_i_filtered_F = fftshift(fft(Y_i_filtered_t,Nf)*Ts);
+
+Y_Q_filtered_F = fftshift(fft(Y_Q_filtered_t,Nf)*Ts);
+
+
+P_Y_i_filtered = ( abs(Y_i_filtered_F).^2 ) / T_total_new;
+P_Y_Q_filtered = ( abs(Y_Q_filtered_F).^2 ) / T_total_new;
+
+% plot the periodograms
+figure('Name','Question -9.2-','NumberTitle','off');
+plot(F_axis,P_Y_i_filtered,'r')
+grid on
+xlabel('frequency')
+ylabel('Periodogram of Y_i_ _f_i_l_t_e_r_e_d')
+title('Output Periodogram')
+figure('Name','Question -9.2-','NumberTitle','off');
+plot(F_axis,P_Y_Q_filtered,'k')
+grid on
+xlabel('frequency')
+ylabel('Periodogram of Y_Q_ _f_i_l_t_e_r_e_d')
+title('Output Periodogram')
+
+
+%% 10)
+
+% TODO (to explain)
+
+Y = zeros(100,2);
+
+i = 1;
+
+for j = 2*A*over + 1 : over : length(t_conv_new) - 2*A*over
+   Y(i,1)=Y_i_filtered_t(j);
+   Y(i,2)=Y_Q_filtered_t(j);
+   i=i+1;
+end
+
+scatterplot(Y);
+grid on;
+title('samples');
+
