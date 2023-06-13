@@ -20,14 +20,21 @@ axis([-1 401 -0.2 1.2])
 title('Bit Train')
 
 %% 2)
-[Xi_n,Xq_n] = bits_to_16PSK(b);
+X = bits_to_16PSK(b);
+
+% euler's formula
+Xi_n = real(X);
+Xq_n = imag(X);
+
 
 figure('Name','Question -2-','NumberTitle','off');
 stem(Xi_n,'r')
+axis([0 100 -1.2 1.2]);
 grid on
 title('Mapped symbols (Real part)')
 figure('Name','Question -2-','NumberTitle','off');
 stem(Xq_n,'k')
+axis([0 100 -1.2 1.2]);
 grid on
 title('Mapped symbols (Imaginary part)')
 
@@ -164,7 +171,7 @@ title('Transmitter Output Periodogram')
 
 
 %% 6)
-% The channel is ideal
+% The channel is ideal, h(t) = d_dirac(t)
 
 %% 7)
 
@@ -172,9 +179,8 @@ title('Transmitter Output Periodogram')
 SNR_db = 20;
 
 var_W = 1/ ( Ts * 10^(SNR_db/10) );
-var_N = Ts*var_W/2;
 
-W_t = sqrt(var_N)*randn(1,length(t_conv))';
+W_t = sqrt(var_W)*randn(1,length(t_conv))';
 
 % channel output signal
 Y_t = X_t + W_t;
@@ -183,19 +189,19 @@ Y_t = X_t + W_t;
 
 % multiply the channel output
 
-Y_i_t = Y_t.*cosinus_carrier;
+Y_i_t = Y_t.*cosinus_carrier*1/2;
 
-Y_Q_t = Y_t.*sinus_carrier;
+Y_Q_t = Y_t.*sinus_carrier*1/2;
 
 % time domain plots
 figure('Name','Question -8.1-','NumberTitle','off');
-plot(t_conv,X_in,'r')
+plot(t_conv,Y_i_t,'r')
 grid on
 xlabel('time')
 ylabel('Amplitude of Y_i')
 title('Output Waveform')
 figure('Name','Question -8.1-','NumberTitle','off');
-plot(t_conv,X_Qn,'k')
+plot(t_conv,Y_Q_t,'k')
 grid on
 xlabel('time')
 ylabel('Amplitude of Y_Q')
@@ -280,19 +286,192 @@ title('Output Periodogram')
 
 %% 10)
 
-% TODO (to explain)
-
+% Y will be a complex vector with dim: 100x1. To make it compatible with
+% the function detect_16_PSK.m , transform it to have dim: 100x2
 Y = zeros(100,2);
 
-i = 1;
 
+% sampling the outputs
+
+% We want to end up wtih N/4 = 100 samples at the output. To achieve this, start
+% sampling from the samples 0 to 1000 with a sampling period equal to over = 10.
+
+i = 1;
 for j = 2*A*over + 1 : over : length(t_conv_new) - 2*A*over
    Y(i,1)=Y_i_filtered_t(j);
    Y(i,2)=Y_Q_filtered_t(j);
    i=i+1;
+   assert(i<=101)
 end
 
-scatterplot(Y);
+scatfig = scatterplot(Y);
+scatfig.Name = 'Question -10-';
+scatfig.NumberTitle = 'off';
+title('Output Sequence Y');
 grid on;
-title('samples');
+
+
+%% 11)
+
+% detect the symbols from Y and estimate input bit sequence
+[est_X,est_bit_seq] = detect_16_PSK(Y);
+
+
+%% 12)
+
+% calculate symbol errors
+X_actual(:,1) = Xi_n;
+X_actual(:,2) = Xq_n;
+
+num_of_symbol_errors = symbol_errors(est_X,X_actual);
+
+disp('Number of symbol errors:')
+disp(num_of_symbol_errors)
+
+%% 13)
+
+% calculate bit errors
+num_of_bit_errors = bit_errors(est_bit_seq',b);
+
+disp('Number of bit errors:')
+disp(num_of_bit_errors)
+
+
+%% PART 2 %%
+%% 1)
+
+r = 1;
+
+P_err_symbol = zeros(1,14);
+P_err_bit    = zeros(1,14);
+
+p_error_symbol_upper_bound = zeros(1,14);
+p_error_bit_lower_bound    = zeros(1,14);
+
+for SNRdb = -2:2:24
+        
+    total_number_of_symbol_errors = 0;
+    total_number_of_bit_errors    = 0;
+
+
+    for K = 1 : 1000
+        % input bit seq
+        b = (sign(randn(4*N, 1)) + 1)/2;
+        % map to 16-PSK
+        X = bits_to_16PSK(b);
+        
+        Xi_n = real(X);
+        Xq_n = imag(X);
+        
+        % initialize srrc 
+        [phi_t,t] = srrc_pulse(T,over,A,a);
+
+        % upsample the symbol trains
+        Xi_n_delta = (1/Ts) * upsample(Xi_n, over);
+        Xq_n_delta = (1/Ts) * upsample(Xq_n, over);
+        x_delta_time=0:Ts:(N)*T-Ts;
+
+        % cumpute the convoltuions
+        X_in = conv(phi_t,Xi_n_delta)*Ts;
+        X_Qn = conv(phi_t,Xq_n_delta)*Ts;
+        t_conv = min(t) + min(x_delta_time) : Ts : max(t) + max(x_delta_time);
+
+        % multiply with carriers
+        cosinus_carrier =  2*cos(2*pi*F0*t_conv)';
+        sinus_carrier   = -2*sin(2*pi*F0*t_conv)';
+        
+        X_I_t = X_in.*cosinus_carrier;
+        X_Q_t = X_Qn.*sinus_carrier;
+
+        % transmitter output 
+        X_t = X_I_t + X_Q_t;
+        var_W = 1/ ( Ts * 10^(SNRdb/10) );
+        W_t = sqrt(var_W)*randn(1,length(t_conv))';
+
+        % channel output signal
+        Y_t = X_t + W_t;
+
+        % multiply with carriers
+        Y_i_t = Y_t.*cosinus_carrier*1/2;
+        Y_Q_t = Y_t.*sinus_carrier*1/2;
+
+        % cumpute the final convoltuions
+        Y_i_filtered_t = conv(Y_i_t,phi_t)*Ts;
+        Y_Q_filtered_t = conv(Y_Q_t,phi_t)*Ts;
+
+        % sampling
+        Y = zeros(100,2);
+        u = 1;
+        for p = 2*A*over + 1 : over : length(t_conv_new) - 2*A*over
+           Y(u,1)=Y_i_filtered_t(p);
+           Y(u,2)=Y_Q_filtered_t(p);
+           u=u+1;
+           assert(u<=101)
+        end
+        
+
+        % detect the symbols from Y and estimate input bit sequence
+        [est_X,est_bit_seq] = detect_16_PSK(Y);
+
+        % Total symbol errors
+        X_actual(:,1) = Xi_n;
+        X_actual(:,2) = Xq_n;
+        
+        se = symbol_errors(est_X,X_actual);
+        total_number_of_symbol_errors = total_number_of_symbol_errors + se;
+
+        % Total bit errors
+        be = bit_errors(est_bit_seq',b);
+        total_number_of_bit_errors = total_number_of_bit_errors + be;
+
+    end
+% experimental symbol and bit errors
+P_err_symbol(r) = (total_number_of_symbol_errors)/(K*length(X));
+P_err_bit(r)    = (total_number_of_bit_errors)/(K*length(b));
+
+
+% translate SNRdb to SNR : SNRdb = 10*log_10(SNR) => SNR = 10^(SNRdb/10)
+SNR = 10^(SNRdb/10);
+
+% theoretical symbol,bit errors
+p_error_symbol_upper_bound(r) = 2 * Q( sqrt( 2*(SNR) )*sin( pi/16 ) );
+p_error_bit_lower_bound(r) = p_error_symbol_upper_bound(r)/4;
+
+r = r + 1;
+
+end
+
+SNRdb_axis = -2 : 2 : 24;
+
+figure('Name','Question -B.2-','NumberTitle','off');
+semilogy(SNRdb_axis,p_error_symbol_upper_bound,'k','LineWidth',2)
+hold on;
+semilogy(SNRdb_axis,P_err_symbol,'r')
+grid on;
+xlabel('SNR_d_B')
+ylabel('Symbol error Probability')
+legend('Upper Bound','Total Symbol error')
+title('Total Symbol error as function of SNR_d_B')
+hold off
+
+
+figure('Name','Question -B.3-','NumberTitle','off');
+semilogy(SNRdb_axis,p_error_bit_lower_bound,'k','LineWidth',2)
+hold on;
+semilogy(SNRdb_axis,P_err_bit,'r')
+grid on;
+xlabel('SNR_d_B')
+ylabel('Bit error Probability')
+legend('Lower Bound','Total Bit error')
+title('Bit error as function of SNR_d_B')
+hold off
+
+fprintf('\n---------Part B---------\n')
+fprintf('\nTotal Symbol error probability per SNR_d_B:\n\n')
+disp('    SNRdb  | P_err_symbol')
+disp([SNRdb_axis' P_err_symbol'])
+
+fprintf('Total bit error probability per SNR_d_B:\n\n')
+disp('    SNRdb  | P_err_bit')
+disp([SNRdb_axis' P_err_bit'])
 

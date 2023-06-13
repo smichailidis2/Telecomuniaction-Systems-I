@@ -1,4 +1,4 @@
-function [Xi_n,Xq_n]= bits_to_16PSK(b)
+function X = bits_to_16PSK(b)
 
 % maps bits to 16 PSK using constellation seen here:
 % https://www.researchgate.net/figure/Gray-mapped-16-PSK-constellation-with-radius-c_fig3_3162047
@@ -48,9 +48,15 @@ function [Xi_n,Xq_n]= bits_to_16PSK(b)
 %⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⠈⡏⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀
 %⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡇⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀
 %⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⢠⣧⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀⡀
+%   
+%   INPUT : b --> bit sequence of length N 
 %
-%   OUTPUT: Xi_n = cos(2pi*m/16)
-%           Xq_n = sin(2pi*m/16) where m = 0,1,...,15
+%   OUTPUT: X = exp( 2 * pi * i * m / 16 )
+%             = cos(2pi*m/16) + i * sin(2pi*m/16) 
+%           
+%           where m = 0,1,...,15
+%           for a total of N / 4 symbols
+%           
 
 l = length(b);
 
@@ -174,8 +180,8 @@ for k = 1 : 4 : l-3
 end
 
 % euler's formula
-Xi_n = real(X);
-Xq_n = imag(X);
+% Xi_n = real(X);
+% Xq_n = imag(X);
 
 
 end
