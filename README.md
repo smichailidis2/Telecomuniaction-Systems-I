@@ -6,7 +6,7 @@ All exercises refer to ideal channels.
 
 Simulation of a baseband system with 2–PAM modulation, using
 Clipped Square Root Raised Cosine filter - SRRC filter.<br />
-[Matlab code...](https://github.com/smichailidis2/Telecomuniaction-Systems-I/blob/main/lab1/exercise_1.m)
+[Matlab code...](https://github.com/smichailidis2/Telecomuniaction-Systems-I/blob/main/lab1/exersice_1_smichailidis2_2020030080.m)
 
 ### Second excercise:
 
